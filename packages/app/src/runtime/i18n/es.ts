@@ -585,7 +585,9 @@ export const dict = {
 
   "context.usage.tokens": "Tokens",
   "context.usage.usage": "Uso",
-  "context.usage.cost": "Costo",
+  "context.usage.cost": "Costo total",
+  "context.usage.inputCost": "Costo de entrada",
+  "context.usage.outputCost": "Costo de salida",
   "context.usage.clickToView": "Haz clic para ver contexto",
   "context.usage.view": "Ver uso del contexto",
 

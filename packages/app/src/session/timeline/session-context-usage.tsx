@@ -76,6 +76,8 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
       message.tokens.cache.read +
       message.tokens.cache.write
     return {
+      message,
+      model,
       total,
       usage: model?.limit.context ? Math.round((total / model.limit.context) * 100) : null,
     }
@@ -88,6 +90,32 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
     tabs()
       .all()
       .some((tab) => tab !== "context" && tab !== "review"),
+  )
+
+  const TOKENS_PER_UNIT = 1_000_000
+
+  const calculateCost = (tokens: number, rate: number | undefined) => {
+    if (!rate) return 0
+    return (tokens * rate) / TOKENS_PER_UNIT
+  }
+
+  const inputCost = createMemo(() => {
+    const ctx = context()
+    if (!ctx) return ""
+    return usd().format(calculateCost(ctx.message.tokens.input, ctx.model?.cost?.input))
+  })
+
+  const outputCost = createMemo(() => {
+    const ctx = context()
+    if (!ctx) return ""
+    return usd().format(calculateCost(ctx.message.tokens.output, ctx.model?.cost?.output))
+  })
+
+  const CostRow = (props: { label: string; value: string }) => (
+    <div class="flex items-center gap-2">
+      <span class="text-text-invert-strong">{props.value}</span>
+      <span class="text-text-invert-base">{props.label}</span>
+    </div>
   )
 
   const openContext = () => {
@@ -136,6 +164,10 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
         name={language.t("context.usage.tokens")}
         value={context()?.total.toLocaleString(language.intl()) ?? "0"}
       />
+      <Show when={context()}>
+        <ContextTooltipRow name={language.t("context.usage.inputCost")} value={inputCost()} />
+        <ContextTooltipRow name={language.t("context.usage.outputCost")} value={outputCost()} />
+      </Show>
     </div>
   )
 

@@ -500,8 +500,10 @@ export const dict = {
   "context.stats.lastActivity": "Last Activity",
 
   "context.usage.tokens": "Tokens",
-  "context.usage.usage": "Context Usage",
-  "context.usage.cost": "Cost",
+  "context.usage.usage": "Usage",
+  "context.usage.cost": "Total Cost",
+  "context.usage.inputCost": "Input Cost",
+  "context.usage.outputCost": "Output Cost",
   "context.usage.clickToView": "Click to view context",
   "context.usage.view": "View context usage",
 
