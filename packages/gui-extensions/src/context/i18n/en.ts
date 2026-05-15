@@ -4,6 +4,8 @@ export default {
   "usage.tokens": "Tokens",
   "usage.usage": "Context",
   "usage.cost": "Cost",
+  "usage.inputCost": "Input Cost",
+  "usage.outputCost": "Output Cost",
   "usage.view": "View context usage",
   "usage.toggle": "Toggle session context",
   "systemPrompt.title": "System Prompt",

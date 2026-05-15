@@ -59,6 +59,8 @@ export function SessionContextUsage(props: {
       message.tokens.cache.write
 
     return {
+      message,
+      model,
       total,
       usage: model?.limit.context ? Math.round((total / model.limit.context) * 100) : null,
     }
@@ -84,6 +86,25 @@ export function SessionContextUsage(props: {
     if (!model) return true
 
     return model.cost.some((cost) => cost.input > 0 || cost.output > 0 || cost.cache.read > 0 || cost.cache.write > 0)
+  })
+
+  const TOKENS_PER_UNIT = 1_000_000
+
+  const calculateCost = (tokens: number, rate: number | undefined) => {
+    if (!rate) return 0
+    return (tokens * rate) / TOKENS_PER_UNIT
+  }
+
+  const inputCost = createMemo(() => {
+    const current = context()
+    if (!current) return ""
+    return usd().format(calculateCost(current.message.tokens.input, current.model?.cost?.input))
+  })
+
+  const outputCost = createMemo(() => {
+    const current = context()
+    if (!current) return ""
+    return usd().format(calculateCost(current.message.tokens.output, current.model?.cost?.output))
   })
 
   const openContext = () => {
@@ -120,6 +141,10 @@ export function SessionContextUsage(props: {
       </Show>
       <ContextTooltipRow name={ctx.t("usage.usage")} value={`${context()?.usage ?? 0}%`} />
       <ContextTooltipRow name={ctx.t("usage.tokens")} value={context()?.total.toLocaleString(i18n.locale()) ?? "0"} />
+      <Show when={context()}>
+        <ContextTooltipRow name={ctx.t("usage.inputCost")} value={inputCost()} />
+        <ContextTooltipRow name={ctx.t("usage.outputCost")} value={outputCost()} />
+      </Show>
     </div>
   )
 

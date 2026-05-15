@@ -4,6 +4,8 @@ export default {
   "usage.tokens": "Token",
   "usage.usage": "Nutzung",
   "usage.cost": "Kosten",
+  "usage.inputCost": "Input-Kosten",
+  "usage.outputCost": "Output-Kosten",
   "usage.view": "Kontextnutzung anzeigen",
   "systemPrompt.title": "System-Prompt",
   "rawMessages.title": "Rohdaten der Nachrichten",
