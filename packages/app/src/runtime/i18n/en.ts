@@ -577,6 +577,8 @@ export const dict = {
   "context.usage.tokens": "Tokens",
   "context.usage.usage": "Context",
   "context.usage.cost": "Cost",
+  "context.usage.inputCost": "Input Cost",
+  "context.usage.outputCost": "Output Cost",
   "context.usage.clickToView": "Click to view context",
   "context.usage.view": "View context usage",
 
