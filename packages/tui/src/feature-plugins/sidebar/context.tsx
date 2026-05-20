@@ -7,6 +7,12 @@ const money = new Intl.NumberFormat("en-US", {
   currency: "USD",
 })
 
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(0) + "M"
+  if (n >= 1_000) return (n / 1_000).toFixed(0) + "K"
+  return n.toString()
+}
+
 export function SidebarContext(props: { context: Plugin.Context; sessionID: string }) {
   const theme = props.context.theme
   const msg = createMemo(() => props.context.data.session.message.list(props.sessionID))
@@ -24,14 +30,20 @@ export function SidebarContext(props: { context: Plugin.Context; sessionID: stri
           <b>Context</b>
         </text>
         <Show when={state()}>
-          {(value) => (
-            <>
-              <text fg={theme.text.muted}>{value().tokens.toLocaleString()} tokens</text>
-              <Show when={value().percent !== undefined}>
-                <text fg={theme.text.muted}>{value().percent}% used</text>
-              </Show>
-            </>
-          )}
+          {(value) => {
+            const usage = value()
+            return (
+              <>
+                <text fg={theme.text.muted}>
+                  {formatTokens(usage.tokens)}
+                  {usage.limit !== undefined ? ` / ${formatTokens(usage.limit)} tokens` : " tokens"}
+                </text>
+                <Show when={usage.percent !== undefined}>
+                  <text fg={theme.text.muted}>{usage.percent}% used</text>
+                </Show>
+              </>
+            )
+          }}
         </Show>
         <Show when={cost() > 0}>
           <text fg={theme.text.muted}>{money.format(cost())} spent</text>
