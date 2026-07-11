@@ -65,6 +65,14 @@ function Provider(props: ParentProps<{ config?: KeymapConfig }>) {
   const config: KeymapConfig = props.config ?? useConfig().data
   const keymap = createDefaultOpenTuiKeymap(renderer)
   const mode = createMode(keymap)
+  const ss3EnterHandler = (sequence: string) => {
+    if (sequence === "\x1bOM") {
+      keymap.dispatchCommand("input.newline")
+      return true
+    }
+    return false
+  }
+  renderer.prependInputHandler(ss3EnterHandler)
   let invocation: { readonly id: string; readonly input?: string } | undefined
   const dispatch = (id: string, input?: string) => {
     const previous = invocation
@@ -145,6 +153,7 @@ function Provider(props: ParentProps<{ config?: KeymapConfig }>) {
     )
   }
   onCleanup(() => {
+    renderer.removeInputHandler(ss3EnterHandler)
     dispose.reverse().forEach((item) => item())
     mode.dispose()
   })
