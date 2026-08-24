@@ -22,6 +22,7 @@ import { llmClient } from "../../effect/app-node-platform.js"
 import { StepFailedError } from "../error.js"
 import { SessionRunnerRetry } from "./retry.js"
 import { SessionStep } from "./step.js"
+import { SessionFileWatch } from "../file-watch.js"
 import { ToolOutput } from "../../tool-output.js"
 import { PluginSupervisor } from "../../plugin/supervisor.js"
 import { MAX_STEPS_PROMPT } from "./max-steps.js"
@@ -41,6 +42,7 @@ const layer = Layer.effect(
     const plugins = yield* PluginSupervisor.Service
     const title = yield* SessionTitle.Service
     const steps = yield* SessionStep.make
+    const fileWatch = yield* SessionFileWatch.Service.pipe(Effect.orElseSucceed(() => undefined))
     // Title generation starts once input is visible and must not delay model execution.
     const titles = yield* FiberMap.make<SessionSchema.ID, void, never>()
 
@@ -157,6 +159,17 @@ const layer = Layer.effect(
         step++
         force = false
         entering = false
+        // After a step completes, check if any tracked files changed externally
+        // and inject a notification so the model can reload them.
+        if (continuing && fileWatch) {
+          const stale = yield* fileWatch.consumeStale
+          if (stale.length > 0) {
+            yield* bus.publish(SessionEvent.Synthetic, {
+              sessionID,
+              text: `The following file${stale.length === 1 ? " was" : "s were"} externally modified. Reload them with the read tool if needed:\n${stale.map((p) => `- ${p}`).join("\n")}`,
+            })
+          }
+        }
       }
     })
 
@@ -303,6 +316,7 @@ export const node = makeLocationNode({
     SessionCompaction.node,
     PluginSupervisor.node,
     SessionTitle.node,
+    SessionFileWatch.node,
     Snapshot.node,
     ToolOutput.node,
     Database.node,

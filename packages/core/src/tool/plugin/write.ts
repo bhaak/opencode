@@ -8,13 +8,14 @@ export * as WriteTool from "./write.js"
 
 import type { Context } from "@opencode-ai/plugin/effect/plugin"
 import { ToolFailure } from "@opencode-ai/ai"
-import { Effect, Schema } from "effect"
+import { Effect, Option, Schema } from "effect"
 import { Bom } from "@opencode-ai/util/bom"
 import { Environment } from "../../environment/index.js"
 import { FileMutation } from "../../file-mutation.js"
 import { Formatter } from "../../formatter.js"
 import { LocationMutation } from "../../location-mutation.js"
 import { Permission } from "../../permission.js"
+import { SessionFileWatch } from "../../session/file-watch.js"
 import { fileDiff } from "./file-diff.js"
 
 export const name = "write"
@@ -51,6 +52,7 @@ export const Plugin = {
     const environment = yield* Environment.Service
     const formatter = yield* Formatter.Service
     const permission = yield* Permission.Service
+    const fileWatch = yield* Effect.serviceOption(SessionFileWatch.Service)
 
     yield* ctx.tool
       .transform((draft) =>
@@ -95,6 +97,9 @@ export const Plugin = {
               const bom = (yield* FileMutation.readText(environment.files, target.absolute)).bom
               if (yield* formatter.file(target.absolute)) {
                 yield* FileMutation.syncTextBom(environment.files, target.absolute, bom)
+              }
+              if (Option.isSome(fileWatch)) {
+                yield* fileWatch.value.track([target.absolute])
               }
               return result
             }).pipe(

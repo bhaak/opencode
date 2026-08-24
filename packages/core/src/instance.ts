@@ -34,6 +34,7 @@ import { WebSearch } from "./websearch.js"
 import { ReferenceInstructions } from "./reference/instructions.js"
 import { SessionRunnerLLM } from "./session/runner/llm.js"
 import { SessionRunnerModel } from "./session/runner/model.js"
+import { SessionFileWatch } from "./session/file-watch.js"
 import { SessionModelTransport } from "./session/model-transport.js"
 import { SessionCompaction } from "./session/compaction.js"
 import { SessionTitle } from "./session/title.js"
@@ -105,6 +106,7 @@ const nodes = [
   SessionTitle.node,
   Snapshot.node,
   SessionRunnerLLM.node,
+  SessionFileWatch.node,
   Vcs.node,
   // Start repository watches only after boot-critical filesystem and Git work.
   LocationWatcher.node,
