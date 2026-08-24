@@ -3,10 +3,13 @@ export * as ReadTool from "./read.js"
 import type { Context } from "@opencode/plugin/effect/plugin"
 import { basename, dirname, join } from "path"
 import { ToolFailure } from "@opencode/ai"
-import { Effect, Schema } from "effect"
+import { Effect, Option, Schema } from "effect"
 import { FSUtil } from "@opencode/util/fs-util"
 import { Location } from "../../location.js"
 import { FileAccess } from "../../file-access.js"
+import { LocationMutation } from "../../location-mutation.js"
+import { Permission } from "../../permission.js"
+import { SessionFileWatch } from "../../session/file-watch.js"
 import { SessionInstructions } from "../../session/instructions.js"
 import { AbsolutePath } from "../../schema.js"
 import { ReadToolFileSystem } from "../read-filesystem.js"
@@ -34,6 +37,7 @@ export const Plugin = {
     const sessionInstructions = yield* SessionInstructions.Service
     const fs = yield* FSUtil.Service
     const location = yield* Location.Service
+    const fileWatch = yield* Effect.serviceOption(SessionFileWatch.Service)
 
     yield* ctx.tool
       .transform((editor) =>
@@ -105,6 +109,9 @@ export const Plugin = {
                 Effect.catch(() => Effect.void),
                 Effect.catchDefect(() => Effect.void),
               )
+              if (Option.isSome(fileWatch)) {
+                yield* fileWatch.value.track([result.target.absolute])
+              }
               return { output: result.content, path: result.path }
             }).pipe(
               Effect.map((result) => ({
