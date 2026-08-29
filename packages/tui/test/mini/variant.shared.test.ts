@@ -28,6 +28,12 @@ describe("run variant shared", () => {
     expect(resolveVariant(undefined, "missing", "low", ["low", "high"])).toBe("low")
   })
 
+  test("drops saved and session variants when the model offers none", () => {
+    expect(resolveVariant(undefined, "medium", "low", [])).toBeUndefined()
+    expect(resolveVariant(undefined, undefined, "medium", [])).toBeUndefined()
+    expect(resolveVariant("medium", undefined, undefined, [])).toBe("medium")
+  })
+
   test("cycles through variants and back to default", () => {
     expect(cycleVariant(undefined, ["low", "high"])).toBe("low")
     expect(cycleVariant("default", ["low", "high"])).toBe("low")

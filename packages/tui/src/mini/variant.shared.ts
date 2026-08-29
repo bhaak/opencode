@@ -38,7 +38,7 @@ export function pickVariant(model: RunInput["model"], input: RunSession | Sessio
 
 function fitVariant(value: string | undefined, variants: string[]): string | undefined {
   const normalized = normalizeModelVariant(value)
-  return normalized && (variants.length === 0 || variants.includes(normalized)) ? normalized : undefined
+  return normalized && variants.includes(normalized) ? normalized : undefined
 }
 
 // Picks the active variant. CLI flag wins, then valid session history, then the
