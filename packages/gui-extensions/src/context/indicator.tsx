@@ -59,8 +59,8 @@ export function SessionContextUsage(props: {
       message.tokens.cache.write
 
     return {
-      message,
-      model,
+      tokens: message.tokens,
+      rate: model?.cost.find((item) => item.tier === undefined) ?? model?.cost[0],
       total,
       usage: model?.limit.context ? Math.round((total / model.limit.context) * 100) : null,
     }
@@ -92,19 +92,24 @@ export function SessionContextUsage(props: {
 
   const calculateCost = (tokens: number, rate: number | undefined) => {
     if (!rate) return 0
+
     return (tokens * rate) / TOKENS_PER_UNIT
   }
 
   const inputCost = createMemo(() => {
     const current = context()
+
     if (!current) return ""
-    return usd().format(calculateCost(current.message.tokens.input, current.model?.cost?.input))
+
+    return usd().format(calculateCost(current.tokens.input, current.rate?.input))
   })
 
   const outputCost = createMemo(() => {
     const current = context()
+
     if (!current) return ""
-    return usd().format(calculateCost(current.message.tokens.output, current.model?.cost?.output))
+
+    return usd().format(calculateCost(current.tokens.output, current.rate?.output))
   })
 
   const openContext = () => {

@@ -50,7 +50,7 @@ export function SidebarContext(props: { context: Plugin.Context; sessionID: stri
         </Show>
         <Show when={state()?.cost}>
           {(value) => (
-            <text fg={theme.text.subdued}>
+            <text fg={theme.text.muted}>
               {money.format(value().input)}/in, {money.format(value().output)}/out per 1M
             </text>
           )}

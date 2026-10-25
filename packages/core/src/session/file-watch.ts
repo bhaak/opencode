@@ -1,10 +1,9 @@
 export * as SessionFileWatch from "./file-watch.js"
 
-import { Context, Effect, Layer, PubSub, Stream } from "effect"
-import { makeLocationNode } from "@opencode-ai/util/effect/app-node"
+import { makeLocationNode } from "@opencode/util/effect/app-node"
+import { Context, Effect, Layer, Ref, Stream } from "effect"
 import { Bus } from "../bus.js"
-import { FileSystem } from "@opencode-ai/schema/filesystem"
-import { Location } from "../location.js"
+import { FileSystem } from "@opencode/schema/filesystem"
 
 export interface Interface {
   /**
@@ -27,66 +26,36 @@ const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const bus = yield* Bus.Service
-    const location = yield* Location.Service
+    // Absolute path → whether an external change was detected since the last consume.
+    const watched = yield* Ref.make(new Map<string, boolean>())
 
-    // Tracked files: absolute path → whether an external change was detected
-    const watched = new Map<string, boolean>()
-
-    // Subscribe to file system change events and mark tracked files as dirty
-    const subscription = yield* Effect.acquireRelease(
-      Effect.gen(function* () {
-        const db = yield* PubSub.unbounded<{ readonly file: string; readonly event: "add" | "change" | "unlink" }>()
-        yield* Stream.runForEach(bus.subscribe(FileSystem.Event.Changed), (event) =>
-          Effect.gen(function* () {
-            // Filter to events at our location
-            if (
-              event.location &&
-              (event.location.directory !== location.directory ||
-                event.location.workspaceID !== location.workspaceID)
-            )
-              return
-            const data = event.data as { readonly file: string; readonly event: "add" | "change" | "unlink" }
-            yield* PubSub.publish(db, data)
-          }),
-        ).pipe(Effect.forkScoped)
-        return db
-      }),
-      (db) => PubSub.shutdown(db),
+    // The bus already restricts delivery to the ambient Location, so no extra filtering is needed.
+    yield* bus.subscribe(FileSystem.Event.Changed).pipe(
+      Stream.runForEach((event) =>
+        Ref.update(watched, (entries) => {
+          if (!entries.has(event.data.file)) return entries
+          return new Map(entries).set(event.data.file, true)
+        }),
+      ),
+      Effect.forkScoped({ startImmediately: true }),
     )
-
-    // Process file change events
-    yield* Stream.runForEach(Stream.fromPubSub(subscription), (data) =>
-      Effect.sync(() => {
-        if (data.event === "add" || data.event === "change") {
-          const path = data.file
-          if (watched.has(path)) watched.set(path, true)
-        }
-      }),
-    ).pipe(Effect.forkScoped)
 
     return Service.of({
       track: (paths) =>
-        Effect.sync(() => {
-          for (const p of paths) {
-            if (!watched.has(p)) watched.set(p, false)
-          }
+        Ref.update(watched, (entries) => {
+          const next = new Map(entries)
+          for (const path of paths) if (!next.has(path)) next.set(path, false)
+          return next
         }),
-      consumeStale: Effect.sync(() => {
-        const stale: string[] = []
-        for (const [path, dirty] of watched) {
-          if (dirty) {
-            stale.push(path)
-            watched.set(path, false)
-          }
-        }
-        return stale
+      consumeStale: Ref.modify(watched, (entries) => {
+        const stale = [...entries].filter(([, dirty]) => dirty).map(([path]) => path)
+        if (stale.length === 0) return [stale, entries]
+        const cleared = new Map(entries)
+        for (const path of stale) cleared.set(path, false)
+        return [stale, cleared]
       }),
     })
   }),
 )
 
-export const node = makeLocationNode({
-  service: Service,
-  layer,
-  deps: [Bus.node, Location.node],
-})
+export const node = makeLocationNode({ service: Service, layer, deps: [Bus.node] })
